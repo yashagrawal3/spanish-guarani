@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
 # Copyright 2014 Richar Nunez - rnezferreira9@gmail.com
 #
 # This program is free software; you can redistribute it and/or modify
@@ -26,6 +29,67 @@ from sugar3.activity.activity import Activity
 from sugar3.activity.widgets import StopButton
 from sugar3.activity.widgets import ActivityToolbarButton
 from sugar3.graphics.toolbarbox import ToolbarBox
+from sugar3.graphics.toolbutton import ToolButton
+from sugar3.graphics.icon import Icon
+from sugar3.graphics import style
+
+
+class HelpButton(Gtk.ToolItem):
+
+    def __init__(self, **kwargs):
+        Gtk.ToolItem.__init__(self)
+
+        help_button = ToolButton('toolbar-help')
+        help_button.set_tooltip(_('Ayuda / ÑepYsyrõ'))
+        self.add(help_button)
+
+        self._palette = help_button.get_palette()
+
+        sw = Gtk.ScrolledWindow()
+        sw.set_size_request(int(Gdk.Screen.width() / 2.8), 100)
+        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        self._max_text_width = int(Gdk.Screen.width() / 3) - 600
+        self._vbox = Gtk.Box()
+        self._vbox.set_orientation(Gtk.Orientation.VERTICAL)
+        self._vbox.set_homogeneous(False)
+        self._vbox.set_border_width(10)
+
+        hbox = Gtk.Box()
+        hbox.pack_start(self._vbox, False, True, 0)
+
+        sw.add_with_viewport(hbox)
+
+        self._palette.set_content(sw)
+        sw.show_all()
+
+        help_button.connect('clicked', self.__help_button_clicked_cb)
+
+    def __help_button_clicked_cb(self, button):
+        self._palette.popup(immediate=True, state=1)
+
+    def add_section(self, section_text):
+        hbox = Gtk.Box()
+        label = Gtk.Label()
+        label.set_use_markup(True)
+        label.set_markup('<b>%s</b>' % section_text)
+        label.set_line_wrap(True)
+        hbox.pack_start(label, False, False, 0)
+        hbox.show_all()
+        self._vbox.pack_start(hbox, False, False, padding=5)
+
+    def add_paragraph(self, text, icon=None):
+        hbox = Gtk.Box()
+        label = Gtk.Label(label=text)
+        label.set_justify(Gtk.Justification.LEFT)
+        label.set_line_wrap(True)
+        hbox.pack_start(label, False, False, 0)
+        if icon is not None:
+            _icon = Icon(icon_name=icon)
+            hbox.add(_icon)
+
+        hbox.show_all()
+        self._vbox.pack_start(hbox, False, False, padding=5)
 
 
 class Hablando_Guarani(Activity):
@@ -104,12 +168,27 @@ class Hablando_Guarani(Activity):
         self.set_toolbar_box(toolbarbox)
 
         toolbarbox.toolbar.insert(ActivityToolbarButton(self), -1)
+        toolbarbox.toolbar.insert(Gtk.SeparatorToolItem(), -1)
         toolbarbox.toolbar.insert(StopButton(self), -1)
+
+        names = ""
+        parser = SafeConfigParser()
+        parser.read("config.ini")
+        for data in [("dic", "A"), ("dic", "E"), ("dic", "I"), ("dic", "O"), ("dic", "U"), ("dic", "Y"), ("dic", "G")]:
+            names += parser.get(*data) + " "
+        
+        names = names[:-1]
+
+        help_button = HelpButton()
+        help_button.add_paragraph(_("Para traducir algo, debes escribirlo en la entrada de abajo y luego presionar enter."))
+        help_button.add_paragraph(_("También puedes ver las traducciones abajo."))
+        help_button.add_paragraph(_("Al precionar uno de los botones (%s), su texto se insertará en la entrada de escritura" % names))
+        toolbarbox.toolbar.insert(help_button, 2)
 
         separator = Gtk.SeparatorToolItem()
         separator.props.draw = False
         separator.set_expand(True)
-        toolbarbox.toolbar.insert(separator, 1)
+        toolbarbox.toolbar.insert(separator, 3)
 
         toolbarbox.show_all()
         toolbarbox.toolbar.show_all()
